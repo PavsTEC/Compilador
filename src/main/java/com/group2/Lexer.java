@@ -1,65 +1,88 @@
 package com.group2;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class Lexer {
     public TablaTokens tokenizar(String input) {
         TablaTokens tabla = new TablaTokens();
+        int linea = 1; // Contador de líneas
 
-        // De aqui para abajo hay que cambiarlo
-        StringBuilder buffer = new StringBuilder();
+        // Definición de expresiones regulares para los tokens
+        String regexIdentificador = "[a-z]{1,12}";
+        String regexNumero = "[0-9]+";
+        String regexAsignacion = "=";
+        String regexSuma = "\\+";
+        String regexResta = "-";
+        String regexMultiplicacion = "\\*";
+        String regexDivision = "/";
+        String regexParentesisIzq = "\\(";
+        String regexParentesisDer = "\\)";
+        String regexPuntoComa = ";";
+        String regexError = "[a-z]+[0-9]+|[0-9]+[a-z]+"; // Errores: letras seguidas de números o viceversa Ej: a12 o
+                                                         // 12a
 
-        int length = input.length();
-        for (int i = 0; i < length; i++) {
-            char currentChar = input.charAt(i);
+        // Combina todas las expresiones regulares en una sola
+        String regex = String.join("|",
+                regexIdentificador,
+                regexNumero,
+                regexAsignacion,
+                regexSuma,
+                regexResta,
+                regexMultiplicacion,
+                regexDivision,
+                regexParentesisIzq,
+                regexParentesisDer,
+                regexPuntoComa,
+                regexError // Agrega el regex de error al final para detección
+        );
 
-            if (Character.isLetter(currentChar)) {
-                buffer.append(currentChar);
-                while (i + 1 < length
-                        && (Character.isLetterOrDigit(input.charAt(i + 1)) || input.charAt(i + 1) == '_')) {
-                    i++;
-                    buffer.append(input.charAt(i));
-                }
-                Token token = new Token(buffer.toString(), "IDENTIFICADOR");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-                buffer.setLength(0);
-            } else if (Character.isDigit(currentChar)) {
-                buffer.append(currentChar);
-                while (i + 1 < length && Character.isDigit(input.charAt(i + 1))) {
-                    i++;
-                    buffer.append(input.charAt(i));
-                }
-                Token token = new Token(buffer.toString(), "NUMERO");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-                buffer.setLength(0);
-            } else if (currentChar == '=') {
-                Token token = new Token(String.valueOf(currentChar), "ASIGNACION");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (currentChar == '+') {
-                Token token = new Token(String.valueOf(currentChar), "SUMA");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (currentChar == '-') {
-                Token token = new Token(String.valueOf(currentChar), "RESTA");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (currentChar == '*') {
-                Token token = new Token(String.valueOf(currentChar), "MULTIPLICACION");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (currentChar == '(') {
-                Token token = new Token(String.valueOf(currentChar), "PARENTESIS_IZQ");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (currentChar == ')') {
-                Token token = new Token(String.valueOf(currentChar), "PARENTESIS_DER");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (currentChar == ';') {
-                Token token = new Token(String.valueOf(currentChar), "PUNTO_COMA");
-                tabla.agregar(token, String.valueOf(1)); // Suponiendo línea 1 para simplicidad
-            } else if (Character.isWhitespace(currentChar)) {
-                // Ignorar espacios
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+
+        while (matcher.find()) {
+            String tokenStr = matcher.group();
+            Token token = null;
+
+            if (tokenStr.matches(regexError)) {
+                // Si se detecta un error léxico, imprime un mensaje
+                System.out.printf("Error [Fase Léxica]: La línea %d contiene un error, lexema no reconocido: %s\n",
+                        linea, tokenStr);
             } else {
-                throw new IllegalArgumentException("Caracter no reconocido: " + currentChar);
+                // Identificar el tipo de token
+                String tipo = identificarTipo(tokenStr);
+                token = new Token(tokenStr, tipo); // Crear un nuevo token
+                tabla.agregar(token, linea); // Agregar el token a la tabla
             }
         }
-        // De aqui para arriba hay que cambiarlo
 
-        tabla.imprimirTokens(); // Imprime la tabla de tokens
+        // Imprimir la tabla de tokens
+        tabla.imprimirTokens();
         return tabla; // Devuelve la tabla de tokens
+    }
+
+    private String identificarTipo(String tokenStr) {
+        if (tokenStr.matches("[a-z]{1,12}")) {// identificadores deben ser en minuscula y maximo de 12 letras
+            return "IDENTIFICADOR";
+        } else if (tokenStr.matches("[0-9]+")) {
+            return "NUMERO";
+        } else if (tokenStr.equals("=")) {
+            return "ASIGNACION";
+        } else if (tokenStr.equals("+")) {
+            return "SUMA";
+        } else if (tokenStr.equals("-")) {
+            return "RESTA";
+        } else if (tokenStr.equals("*")) {
+            return "MULTIPLICACION";
+        } else if (tokenStr.equals("/")) {
+            return "DIVISION";
+        } else if (tokenStr.equals("(")) {
+            return "PARENTESIS_IZQ";
+        } else if (tokenStr.equals(")")) {
+            return "PARENTESIS_DER";
+        } else if (tokenStr.equals(";")) {
+            return "PUNTO_COMA";
+        }
+        return "DESCONOCIDO"; // En caso de que no se reconozca el tipo
     }
 }

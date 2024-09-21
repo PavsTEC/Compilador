@@ -11,7 +11,7 @@ public class TablaTokens {
     @Getter
     @AllArgsConstructor
     class Informacion {
-        private String linea;
+        private int linea;
     }
 
     private Map<Token, Informacion> tabla; // Mapa para almacenar tokens y su información
@@ -21,7 +21,7 @@ public class TablaTokens {
     }
 
     // Método para agregar un token a la tabla
-    public void agregar(Token token, String linea) {
+    public void agregar(Token token, int linea) {
         tabla.put(token, new Informacion(linea));
     }
 
